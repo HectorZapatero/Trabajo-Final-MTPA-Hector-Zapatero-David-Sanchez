@@ -17,7 +17,7 @@ public class VentanaChat extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // 2. Panel de Salones (Izquierda) - Requisito funcional [cite: 44]
+        // 2. Panel de Salones (Izquierda)
         modeloSalones = new DefaultListModel<>();
         modeloSalones.addElement("IA");
         modeloSalones.addElement("Deportes");
