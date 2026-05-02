@@ -94,6 +94,12 @@ public class VentanaChat extends JFrame {
                     case "LOGIN_ERR":
                         JOptionPane.showMessageDialog(this, "Error de Login: " + partes[1], "Acceso Denegado", JOptionPane.ERROR_MESSAGE);
                         break;
+                    case "USERS_LIST":
+                        // partes[1] traerá algo como "Pepe, Juan, Ana, "
+                        String listaConectados = partes[1];
+                        areaChat.append("--- USUARIOS EN LÍNEA: " + listaConectados + "---\n");
+                        areaChat.setCaretPosition(areaChat.getDocument().getLength());
+                         break;
 
                     default:
                         // Para PONG u otros mensajes del sistema
@@ -115,7 +121,7 @@ public class VentanaChat extends JFrame {
         // 1. PRIMERO comprobamos si el usuario ha escrito el comando manual
         // Si empieza por MSG_ROOM|, pasamos olimpicamente de la lista de salones
         if (texto.startsWith("MSG_ROOM|") || texto.startsWith("REG|") || 
-            texto.startsWith("LOGIN|") || texto.startsWith("LOGOUT")) {
+            texto.startsWith("LOGIN|") || texto.startsWith("LOGOUT")||texto.startsWith("LIST_USERS")) {
             
             conexion.enviarComando(texto);
             
@@ -128,7 +134,6 @@ public class VentanaChat extends JFrame {
                 return;
             }
             
-            // Aquí es donde el programa "ayuda" al usuario normal
             String comandoProtocolo = "MSG_ROOM|" + salonSeleccionado + "|" + texto;
             conexion.enviarComando(comandoProtocolo);
         }

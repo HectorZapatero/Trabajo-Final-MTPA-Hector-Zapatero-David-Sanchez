@@ -62,6 +62,7 @@ public class ManejadorCliente implements Runnable
                                 int numeroAleatorio= (int)(Math.random()*9000+1000);
                                 String claveAutonumerica=String.valueOf(numeroAleatorio);
                                 ServidorChat.usuariosRegistrados.put(nuevoUsuario,claveAutonumerica);
+                                guardarEnCSV(nuevoUsuario,claveAutonumerica);//Esto persistira en el CSV
                                 salida.println("REG_OK|"+ claveAutonumerica);
                                 System.out.println("Registro exitoso ---> Usuario "+nuevoUsuario+"|Clave: "+claveAutonumerica);
                             }
@@ -101,6 +102,18 @@ public class ManejadorCliente implements Runnable
                                  }
                             }
                             break;
+                        case "LIST_USERS":
+                            if(autenticado){
+                                //String builder nos ayuda a poder pegar los nombresç
+                                StringBuilder nombres = new StringBuilder();
+                                for(ManejadorCliente c: ServidorChat.clientesConectados){
+                                    nombres.append(c.nombreUsuario).append(",");
+                                }
+                                salida.println("USER_LIST|"+ nombres.toString());
+                            }
+                            break;
+
+
                         case "LOGOUT":
                             this.autenticado=false;
                             cerrarConexion();
@@ -120,6 +133,16 @@ public class ManejadorCliente implements Runnable
 
 
     }
+    private void guardarEnCSV(String usuario,String claveAutonumerica){
+        //el true hace que se guarde al final sin borrar lo anterior
+        try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("usuarios.csv", true))) {
+            pw.println(usuario+","+ claveAutonumerica);
+        }catch(IOException e){
+            System.err.println("Error al escribir en el csv:"+ e.getMessage());
+        }
+    }
+
+
     private void cerrarConexion(){
         try{
             ServidorChat.clientesConectados.remove(this);
