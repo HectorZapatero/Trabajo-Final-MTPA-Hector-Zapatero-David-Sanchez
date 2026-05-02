@@ -4,11 +4,18 @@ import Cliente.ManejadorCliente;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class ServidorChat 
 {
+
     private static final int PUERTO= 5000;
+    public static ConcurrentHashMap <String, String> usuariosRegistrados = new ConcurrentHashMap<>();
+    public static List<ManejadorCliente> clientesConectados=Collections.synchronizedList(new ArrayList<>());
     public void iniciar()
     {
         try(ServerSocket serverSocket= new ServerSocket(PUERTO))
@@ -22,6 +29,7 @@ public class ServidorChat
 
                 //Multiprocesamiento
                 ManejadorCliente manejador= new ManejadorCliente(socketCliente);
+                clientesConectados.add(manejador);
                 new Thread(manejador).start();
 
             }
@@ -36,6 +44,7 @@ public class ServidorChat
     public static void main(String[] args)
     {
         new ServidorChat().iniciar();
+        
     } 
    
 
