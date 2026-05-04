@@ -15,8 +15,8 @@ public class ManejadorCliente implements Runnable
     private BufferedReader entrada;
     private PrintWriter salida;
 
-    private String nombreUsuario="Anonimo";
-    private boolean autenticado=false;
+    String nombreUsuario="Anonimo";
+    boolean autenticado=false;
     // Evita que cerrarConexion ejecute la notificacion de salida mas de una vez
     private boolean yaDesconectado = false;
 
@@ -128,6 +128,34 @@ public class ManejadorCliente implements Runnable
                         this.autenticado=false;
                         cerrarConexion();
                         break;
+                   case "MSG_PRIV":
+                        if(autenticado && partes.length >= 3){
+                            String destinatario = partes[1];
+                            String mensajePrivado = partes[2];
+                            boolean encontrado = false;
+                            
+                            // Cogemos la hora exacta para que quede igual que los salones
+                            String fechaHora = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+
+                            for(ManejadorCliente c : ServidorChat.clientesConectados){
+                                if(c.autenticado && c.nombreUsuario.equals(destinatario)){
+                                    
+                                    // 1. Al que lo recibe le sale (Privado)
+                                    c.enviarMensaje("RECV_PRIV|" + this.nombreUsuario + "|Privado|" + fechaHora + "|" + mensajePrivado);
+                                    encontrado = true;
+                                    
+                                    // 2. A ti (remitente) te sale a quién se lo mandas
+                                    this.enviarMensaje("RECV_PRIV|Tú|Privado para " + destinatario + "|" + fechaHora + "|" + mensajePrivado);
+                                    break;
+                                }
+                            }
+
+                            if(!encontrado){
+                                this.enviarMensaje("MSG_ERR|El usuario " + destinatario + " no está conectado o no existe.");
+                            }
+                        }
+                        break;
+                        
             }
         }
 
