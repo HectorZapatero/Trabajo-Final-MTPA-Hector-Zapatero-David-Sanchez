@@ -23,7 +23,7 @@ public class VentanaChat extends JFrame {
         modeloSalones.addElement("Deportes");
         modeloSalones.addElement("Manga");
         modeloSalones.addElement("Therian");
-        modeloSalones.addElement("UEMO");
+        modeloSalones.addElement("UEMC");
         listaSalones = new JList<>(modeloSalones); // Inicializamos la variable de clase
         
         // Seleccionamos el primero por defecto para evitar errores
@@ -94,6 +94,18 @@ public class VentanaChat extends JFrame {
                     case "LOGIN_ERR":
                         JOptionPane.showMessageDialog(this, "Error de Login: " + partes[1], "Acceso Denegado", JOptionPane.ERROR_MESSAGE);
                         break;
+                    case "NOTIFY_JOIN":
+                        String usuarioEntrada = partes[1];
+                        areaChat.append(">>> " + usuarioEntrada + " se ha conectado al chat.\n");
+                        areaChat.setCaretPosition(areaChat.getDocument().getLength());
+                        mostrarNotificacionTemporal(usuarioEntrada + " se ha unido al chat.", 3000);
+                        break;
+
+                    case "NOTIFY_LEAVE":
+                        String usuarioSalida = partes[1];
+                        areaChat.append("<<< " + usuarioSalida + " ha abandonado el chat.\n");
+                        areaChat.setCaretPosition(areaChat.getDocument().getLength());
+                        break;
                     case "USERS_LIST":
                         // partes[1] traerá algo como "Pepe, Juan, Ana, "
                         String listaConectados = partes[1];
@@ -112,6 +124,25 @@ public class VentanaChat extends JFrame {
         } catch (Exception e) {
             areaChat.append("Error al conectar: " + e.getMessage() + "\n");
         }
+    }
+
+    // Muestra un popup no bloqueante que se cierra solo tras X milisegundos
+    private void mostrarNotificacionTemporal(String mensaje, int milisegundos)
+    {
+        JDialog dialogo = new JDialog(this, "Notificación", false); // false = no modal
+        dialogo.setLayout(new FlowLayout());
+        dialogo.add(new JLabel("  " + mensaje + "  "));
+        dialogo.pack();
+ 
+        // Centramos el popup respecto a la ventana principal
+        Point ubicacion = this.getLocation();
+        dialogo.setLocation(ubicacion.x + this.getWidth() - dialogo.getWidth() - 10,
+                            ubicacion.y + 40);
+ 
+        dialogo.setVisible(true);
+ 
+        // Cierra el dialogo en el hilo correcto
+        new javax.swing.Timer(milisegundos, e -> dialogo.dispose()).start();
     }
 
     private void enviarMensaje() {

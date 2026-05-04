@@ -17,6 +17,8 @@ public class ManejadorCliente implements Runnable
 
     private String nombreUsuario="Anonimo";
     private boolean autenticado=false;
+    // Evita que cerrarConexion ejecute la notificacion de salida mas de una vez
+    private boolean yaDesconectado = false;
 
 
     public ManejadorCliente(Socket socket)
@@ -80,59 +82,63 @@ public class ManejadorCliente implements Runnable
                                     this.autenticado=true;
                                     salida.println("LOGIN_OK|IA,DEPORTES,THERIAN,MANGA,UEMC");
                                     System.out.println(usuario+" ha iniciado sesion ");
+                                    // Avisamos al resto de clientes autenticados de que este usuario se ha conectado.
+                                    // A uno mismo no se le manda para no confundirle.
+                                    String notificacionEntrada = "NOTIFY_JOIN|" + this.nombreUsuario;
+                                    for (ManejadorCliente cliente : ServidorChat.clientesConectados) {
+                                        if (cliente != this && cliente.autenticado) {
+                                            cliente.enviarMensaje(notificacionEntrada);
+                                        }
+                                    }
                                 }else{
                                     salida.println("LOGIN_ERR|Credenciales_incorrectas");
-                                }
-                                
+                                }    
                         }
                         break;
-                        case "MSG_ROOM":
-                            if(partes.length>=3 && autenticado){
-                                String salon= partes[1];
-                                String contenido=partes[2];
 
-                                if(contenido.length()>190){
-                                    contenido=contenido.substring(0,190);
-                                }
-                                String fechaHora=LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-                                String difusion= "ROOM_BROADCAST|"+ salon + "|"+this.nombreUsuario+"|"+fechaHora+"|"+contenido;
-                                //BROADCAST:repartir el mensaje a todos lños clientes conectados
-                                for(ManejadorCliente cliente: ServidorChat.clientesConectados){
-                                    cliente.enviarMensaje(difusion);
-                                 }
+                    case "MSG_ROOM":
+                        if(partes.length>=3 && autenticado){
+                            String salon= partes[1];
+                            String contenido=partes[2];
+
+                            if(contenido.length()>190){
+                                contenido=contenido.substring(0,190);
                             }
-                            break;
-                        case "LIST_USERS":
-                            if(autenticado){
-                                //String builder nos ayuda a poder pegar los nombresç
-                                StringBuilder nombres = new StringBuilder();
-                                for(ManejadorCliente c: ServidorChat.clientesConectados){
+                            String fechaHora=LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+                            String difusion= "ROOM_BROADCAST|"+ salon + "|"+this.nombreUsuario+"|"+fechaHora+"|"+contenido;
+                            //BROADCAST:repartir el mensaje a todos lños clientes conectados
+                            for(ManejadorCliente cliente: ServidorChat.clientesConectados){                                    cliente.enviarMensaje(difusion);
+                            }
+                        }
+                        break;
+                    case "LIST_USERS":
+                        if(autenticado){
+                        //String builder nos ayuda a poder pegar los nombresç
+                            StringBuilder nombres = new StringBuilder();
+                            for (ManejadorCliente c : ServidorChat.clientesConectados) {
+                                if (c.autenticado) {
                                     nombres.append(c.nombreUsuario).append(",");
                                 }
-                                salida.println("USER_LIST|"+ nombres.toString());
                             }
-                            break;
+                            salida.println("USER_LIST|"+ nombres.toString());
+                        }
+                        break;
 
-
-                        case "LOGOUT":
-                            this.autenticado=false;
-                            cerrarConexion();
-                            break;
-                }
+                    case "LOGOUT":
+                        this.autenticado=false;
+                        cerrarConexion();
+                        break;
             }
-        } catch(IOException e)
-            {
-                System.out.println("Cliente desconectado.");
-            }finally
-            {
-                cerrarConexion();
-            }
-            
-            
-                
+        }
 
-
+    } catch(IOException e){
+        System.out.println("Cliente desconectado.");
+    }finally{
+        cerrarConexion();
     }
+}
+
+
     private void guardarEnCSV(String usuario,String claveAutonumerica){
         //el true hace que se guarde al final sin borrar lo anterior
         try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("usuarios.csv", true))) {
@@ -145,7 +151,18 @@ public class ManejadorCliente implements Runnable
 
     private void cerrarConexion(){
         try{
+            if(yaDesconectado) return;
+            yaDesconectado=true;
             ServidorChat.clientesConectados.remove(this);
+            // Notificamos al resto que este usuario se ha ido (solo si habia hecho login)
+            if(autenticado){
+                String notificacionSalida = "NOTIFY_LEAVE|" + this.nombreUsuario;
+                for(ManejadorCliente cliente: ServidorChat.clientesConectados){
+                    if(cliente.autenticado){
+                        cliente.enviarMensaje(notificacionSalida);
+                    }
+                }
+            }
             if(socket!=null && !socket.isClosed()){
                 socket.close();
                 System.out.println("Sesion cerrada para "+ nombreUsuario);

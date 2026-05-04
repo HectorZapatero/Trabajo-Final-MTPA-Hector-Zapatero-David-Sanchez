@@ -1,0 +1,38 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "VentanaChat",
+      "request": "launch",
+      "mainClass": "Cliente.VentanaChat",
+      "projectName": "Trabajo Final MTPA_6c410073"
+    },
+    {
+      "type": "java",
+      "name": "ServidorChat",
+      "request": "launch",
+      "mainClass": "Servidor.ServidorChat",
+      "projectName": "Trabajo Final MTPA_6c410073"
+    },
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "stopAtEntry": false,
+      "externalConsole": true,
+      "cwd": "c:/Users/DAVID/Desktop/Trabajo-Final-MTPA-Hector-Zapatero/Trabajo Final MTPA/Cliente",
+      "program": "c:/Users/DAVID/Desktop/Trabajo-Final-MTPA-Hector-Zapatero/Trabajo Final MTPA/Cliente/build/Debug/outDebug",
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}
