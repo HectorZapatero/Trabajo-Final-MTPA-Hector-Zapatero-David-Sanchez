@@ -1,116 +1,92 @@
 package Cliente;
 
 import java.awt.*;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.*;
 
 public class VentanaChat extends JFrame {
-    // --- VARIABLES DEL CHAT PÚBLICO ---
-    private JTextArea areaChat;
+    private JTextArea areaChat; 
     private JTextField campoMensaje;
-    private DefaultListModel<String> modeloSalones;
-    private JList<String> listaSalones; 
     private ConexionServidor conexion;
-
-    // --- NUEVAS VARIABLES PARA MENSAJES PRIVADOS (LA INTERFAZ) ---
-    private JTextArea areaPrivados;
-    private JTextField campoDestinatario;
-    private JTextField campoMensajePrivado;
-    private JButton btnEnviarPrivado;
+    private ConcurrentHashMap<String, VentanaCanal> ventanasAbiertas = new ConcurrentHashMap<>();
 
     public VentanaChat() {
-        setTitle("UEMC Chat - Cliente");
-        setSize(650, 450); 
+        setTitle("UEMC Chat - Terminal Principal");
+        setSize(700, 400); 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // --- CREACIÓN DEL SISTEMA DE PESTAÑAS ---
-        JTabbedPane sistemaPestanas = new JTabbedPane();
-
-        
-        // PESTAÑA 1: SALONES PÚBLICOS
-      
-        JPanel panelPublico = new JPanel(new BorderLayout());
-
-        modeloSalones = new DefaultListModel<>();
-        modeloSalones.addElement("IA");
-        modeloSalones.addElement("Deportes");
-        modeloSalones.addElement("Manga");
-        modeloSalones.addElement("Therian");
-        modeloSalones.addElement("UEMC");
-        listaSalones = new JList<>(modeloSalones);
-        listaSalones.setSelectedIndex(0); 
-        panelPublico.add(new JScrollPane(listaSalones), BorderLayout.WEST);
+        JLabel etiquetaSalones = new JLabel(" SALONES DISPONIBLES: IA | Deportes | Manga | Therian | UEMC | Mensajes Privados");
+        etiquetaSalones.setFont(new Font("Arial", Font.BOLD, 13));
+        etiquetaSalones.setHorizontalAlignment(SwingConstants.CENTER);
+        etiquetaSalones.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        add(etiquetaSalones, BorderLayout.NORTH);
 
         areaChat = new JTextArea();
         areaChat.setEditable(false);
-        panelPublico.add(new JScrollPane(areaChat), BorderLayout.CENTER);
+        areaChat.setBackground(Color.WHITE); 
+        areaChat.setForeground(Color.BLACK); 
+        areaChat.setFont(new Font("Consolas", Font.PLAIN, 14));
+        add(new JScrollPane(areaChat), BorderLayout.CENTER);
 
         JPanel panelInferior = new JPanel(new BorderLayout());
         campoMensaje = new JTextField();
-        JButton botonEnviar = new JButton("Enviar");
+        JButton botonEnviar = new JButton("Ejecutar");
         panelInferior.add(campoMensaje, BorderLayout.CENTER);
         panelInferior.add(botonEnviar, BorderLayout.EAST);
-        panelPublico.add(panelInferior, BorderLayout.SOUTH);
+        add(panelInferior, BorderLayout.SOUTH);
 
-        
-        // PESTAÑA 2: MENSAJES PRIVADOS
-        
-        JPanel panelPrivados = crearPanelPrivados();
-
-        // Añadimos las dos pestañas a la ventana
-        sistemaPestanas.addTab("Salones Públicos", panelPublico);
-        sistemaPestanas.addTab("Mensajes Privados", panelPrivados);
-        add(sistemaPestanas, BorderLayout.CENTER);
-
-        // --- LÓGICA DE CONEXIÓN ---
         conectarAlServidor();
 
-        // Acciones al pulsar Enviar en el chat público
-        botonEnviar.addActionListener(e -> enviarMensaje());
-        campoMensaje.addActionListener(e -> enviarMensaje());
+        botonEnviar.addActionListener(e -> enviarComandoTerminal());
+        campoMensaje.addActionListener(e -> enviarComandoTerminal());
     }
 
-    // --- FABRICAMOS EL PANEL DE PRIVADOS (LA NUEVA INTERFAZ) ---
-    private JPanel crearPanelPrivados() {
-        JPanel panel = new JPanel(new BorderLayout());
-
-        areaPrivados = new JTextArea();
-        areaPrivados.setEditable(false);
-        panel.add(new JScrollPane(areaPrivados), BorderLayout.CENTER);
-
-        JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.LEFT));
-
-        panelInferior.add(new JLabel("Para (Nombre):"));
-        campoDestinatario = new JTextField(8);
-        panelInferior.add(campoDestinatario);
-
-        panelInferior.add(new JLabel("Mensaje:"));
-        campoMensajePrivado = new JTextField(20);
-        panelInferior.add(campoMensajePrivado);
-
-        btnEnviarPrivado = new JButton("Enviar DM");
-        panelInferior.add(btnEnviarPrivado);
-
-        btnEnviarPrivado.addActionListener(e -> enviarMensajePrivado());
-        campoMensajePrivado.addActionListener(e -> enviarMensajePrivado());
-
-        panel.add(panelInferior, BorderLayout.SOUTH);
-        return panel;
-    }
-
-    // --- MÉTODO PARA ENVIAR EL PRIVADO ---
-    private void enviarMensajePrivado() {
-        String destinatario = campoDestinatario.getText().trim();
-        String texto = campoMensajePrivado.getText().trim();
-
-        if (destinatario.isEmpty() || texto.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Escribe a quién va dirigido y el mensaje.");
-            return;
+    private void abrirVentana(String nombreCanal) {
+        if (!ventanasAbiertas.containsKey(nombreCanal)) {
+            VentanaCanal nuevaVentana = new VentanaCanal(nombreCanal, conexion, () -> {
+                ventanasAbiertas.remove(nombreCanal);
+                if (!nombreCanal.startsWith("Priv_")) {
+                    conexion.enviarComando("LEAVE_ROOM|" + nombreCanal); 
+                }
+                String nombreMostrar = nombreCanal.startsWith("Priv_") ? "Privado con " + nombreCanal.substring(5) : nombreCanal;
+                areaChat.append(">> Has cerrado el canal: " + nombreMostrar + "\n");
+            });
+            ventanasAbiertas.put(nombreCanal, nuevaVentana);
+            nuevaVentana.setLocationRelativeTo(this);
+            nuevaVentana.setVisible(true);
+            
+            if (!nombreCanal.startsWith("Priv_")) {
+                conexion.enviarComando("JOIN_ROOM|" + nombreCanal); 
+            }
+            String nombreMostrar = nombreCanal.startsWith("Priv_") ? "Privado con " + nombreCanal.substring(5) : nombreCanal;
+            areaChat.append(">> Canal abierto: " + nombreMostrar + "\n");
         }
+    }
 
-        // Enviamos el comando al servidor
-        conexion.enviarComando("MSG_PRIV|" + destinatario + "|" + texto);
-        campoMensajePrivado.setText(""); 
+    private void enviarComandoTerminal() {
+        String texto = campoMensaje.getText().trim();
+        if (!texto.isEmpty()) {
+            if (texto.startsWith("MSG_ROOM|")) {
+                String[] partes = texto.split("\\|");
+                if (partes.length >= 3) {
+                    abrirVentana(partes[1]); 
+                }
+                conexion.enviarComando(texto);
+            } else if (texto.startsWith("MSG_PRIV|")) {
+                String[] partes = texto.split("\\|");
+                if (partes.length >= 3) {
+                    String destino = partes[1];
+                    String msg = partes[2];
+                    abrirVentana("Priv_" + destino);
+                    ventanasAbiertas.get("Priv_" + destino).mostrarMensaje("Tú: " + msg);
+                }
+                conexion.enviarComando(texto);
+            } else {
+                conexion.enviarComando(texto);
+            }
+            campoMensaje.setText("");
+        }
     }
 
     private void conectarAlServidor() {
@@ -128,80 +104,86 @@ public class VentanaChat extends JFrame {
                         String emisor = partes[2];
                         String fecha = partes[3];
                         String texto = partes[4];
-                        areaChat.append("[" + fecha + "] " + emisor + " (" + salon + "): " + texto + "\n");
-                        areaChat.setCaretPosition(areaChat.getDocument().getLength());
+                        if (ventanasAbiertas.containsKey(salon)) {
+                            ventanasAbiertas.get(salon).mostrarMensaje("[" + fecha + "] " + emisor + ": " + texto);
+                        }
                         break;
-                        
-                    case "REG_OK":
-                        JOptionPane.showMessageDialog(this, 
-                            "¡Registro completado!\nTu clave única es: " + partes[1] + "\nApúntala para iniciar sesión.", 
-                            "Registro Exitoso", JOptionPane.INFORMATION_MESSAGE);
-                        break;
-                        
-                    case "REG_ERR":
-                        JOptionPane.showMessageDialog(this, "Error al registrar: " + partes[1], "Error", JOptionPane.ERROR_MESSAGE);
-                        break;
-                        
-                    case "LOGIN_OK":
-                        areaChat.append("--- HAS INICIADO SESIÓN CORRECTAMENTE ---\n");
-                        break;
-                        
-                    case "LOGIN_ERR":
-                        JOptionPane.showMessageDialog(this, "Error de Login: " + partes[1], "Acceso Denegado", JOptionPane.ERROR_MESSAGE);
+
+                    case "RECV_PRIV":
+                        if (partes.length >= 3) {
+                            String remitente = partes[1];
+                            String mensajeP = partes[2];
+                            abrirVentana("Priv_" + remitente);
+                            ventanasAbiertas.get("Priv_" + remitente).mostrarMensaje(remitente + ": " + mensajeP);
+                        }
                         break;
                         
                     case "NOTIFY_JOIN":
                         String usuarioEntrada = partes[1];
                         areaChat.append(">>> " + usuarioEntrada + " se ha conectado al chat.\n");
-                        areaChat.setCaretPosition(areaChat.getDocument().getLength());
                         mostrarNotificacionTemporal(usuarioEntrada + " se ha unido al chat.", 3000);
                         break;
 
                     case "NOTIFY_LEAVE":
-                        String usuarioSalida = partes[1];
-                        areaChat.append("<<< " + usuarioSalida + " ha abandonado el chat.\n");
-                        areaChat.setCaretPosition(areaChat.getDocument().getLength());
+                        areaChat.append("<<< " + partes[1] + " ha abandonado el chat.\n");
                         break;
-                        
-                    case "USERS_LIST":
-                        String listaConectados = partes[1];
-                        areaChat.append("--- USUARIOS EN LÍNEA: " + listaConectados + "---\n");
-                        areaChat.setCaretPosition(areaChat.getDocument().getLength());
-                         break;
 
-                    // --- RECIBIR MENSAJES PRIVADOS ---
-                    case "RECV_PRIV":
-                        if (partes.length >= 5) {
-                            String remitente = partes[1];
-                            String contextoSalon = partes[2]; // Aquí vendrá "Privado" o "Privado para Ana"
-                            String fechaP = partes[3];
-                            String mensajeP = partes[4];
+                    case "MAINTENANCE":
+                        if (partes.length >= 2) {
+                            if (partes[1].equals("ON")) {
+                         
+                                JOptionPane.showMessageDialog(this, "🛠️ El servidor acaba de entrar en MANTENIMIENTO.\nPor seguridad, se cerrará tu sesión actual.", "Desconexión Forzosa", JOptionPane.WARNING_MESSAGE);
+
+                                conexion.enviarComando("LOGOUT");
                             
-                            // Lo imprimimos en la pestaña de DMs con el formato exacto que pediste
-                            areaPrivados.append("[" + fechaP + "] " + remitente + " (" + contextoSalon + "): " + mensajeP + "\n");
-                            areaPrivados.setCaretPosition(areaPrivados.getDocument().getLength());
-                            
-                        if (!remitente.equals("Tú")) {
-                            mostrarNotificacionTemporal("🔔 ¡Nuevo mensaje privado de " + remitente + "!", 3000);
-                        }
+                                System.exit(0); 
+                                
+                            } else {
+                                JOptionPane.showMessageDialog(this, "✅ El mantenimiento ha finalizado.\nYa puedes volver a conectarte.", "Aviso del Sistema", JOptionPane.INFORMATION_MESSAGE);
+                                areaChat.append("▶️ [SISTEMA] El mantenimiento ha finalizado.\n");
+                            }
                         }
                         break;
 
                     case "MSG_ERR":
                         if (partes.length >= 2) {
-                            areaPrivados.append("❌ ERROR: " + partes[1] + "\n");
-                            areaPrivados.setCaretPosition(areaPrivados.getDocument().getLength());
+                            
+                            JOptionPane.showMessageDialog(this, partes[1], "Acceso Denegado", JOptionPane.ERROR_MESSAGE);
+                            areaChat.append("❌ ERROR: " + partes[1] + "\n");
+                        }
+                        break;
+                    case "REG_OK":
+                        JOptionPane.showMessageDialog(this, "¡Registro completado!\nTu clave única es: " + partes[1], "Registro Exitoso", JOptionPane.INFORMATION_MESSAGE);
+                        areaChat.append(">> Registro exitoso. Clave obtenida.\n");
+                        break;
+
+                    case "PRIV_ERR":
+                        if (partes.length >= 2) {
+                            areaChat.append(" ERROR PRIVADO: " + partes[1] + "\n");
+                        }
+                        break;
+                   
+                    case "HIST_DATA":
+                        if (partes.length >= 5) {
+                            String salaHist = partes[1];
+                            String emisorHist = partes[2];
+                            String fechaHist = partes[3];
+                            String textoHist = partes[4];
+                            if (ventanasAbiertas.containsKey(salaHist)) {
+                                ventanasAbiertas.get(salaHist).mostrarMensaje("[HISTORIAL] [" + fechaHist + "] " + emisorHist + ": " + textoHist);
+                            }
                         }
                         break;
 
                     default:
-                        areaChat.append("Sistema: " + mensajeCrudo + "\n");
+                        areaChat.append(">> " + mensajeCrudo + "\n");
+                        areaChat.setCaretPosition(areaChat.getDocument().getLength());
                         break;
-                        
                 }
             });
             
-            areaChat.append("Conectado al servidor. Escribe REG|tu_nombre para registrarte, o LOGIN|tu_nombre|tu_clave para entrar.\n");
+            areaChat.append(">> Conexión establecida con el servidor de la UEMC.\n");
+            areaChat.append(">> Comandos: REG|nombre | LOGIN|nombre|clave | MSG_ROOM|salon|mensaje o MSG_PRIV|usuario|mensaje\n");
         } catch (Exception e) {
             areaChat.append("Error al conectar: " + e.getMessage() + "\n");
         }
@@ -212,40 +194,10 @@ public class VentanaChat extends JFrame {
         dialogo.setLayout(new FlowLayout());
         dialogo.add(new JLabel("  " + mensaje + "  "));
         dialogo.pack();
- 
         Point ubicacion = this.getLocation();
-        dialogo.setLocation(ubicacion.x + this.getWidth() - dialogo.getWidth() - 10,
-                            ubicacion.y + 40);
- 
+        dialogo.setLocation(ubicacion.x + this.getWidth() - dialogo.getWidth() - 10, ubicacion.y + 40);
         dialogo.setVisible(true);
- 
         new javax.swing.Timer(milisegundos, e -> dialogo.dispose()).start();
-    }
-
-    private void enviarMensaje() {
-        String texto = campoMensaje.getText().trim();
-        if (!texto.isEmpty()) {
-            
-            if (texto.startsWith("MSG_ROOM|") || texto.startsWith("REG|") || 
-                texto.startsWith("LOGIN|") || texto.startsWith("LOGOUT") || texto.startsWith("LIST_USERS") 
-                || texto.startsWith("MSG_PRIV|")) {
-                
-                conexion.enviarComando(texto);
-                
-            } else {
-                String salonSeleccionado = listaSalones.getSelectedValue();
-                
-                if (salonSeleccionado == null) {
-                    JOptionPane.showMessageDialog(this, "Selecciona un salón o escribe el comando completo.");
-                    return;
-                }
-                
-                String comandoProtocolo = "MSG_ROOM|" + salonSeleccionado + "|" + texto;
-                conexion.enviarComando(comandoProtocolo);
-            }
-            
-            campoMensaje.setText("");
-        }
     }
 
     public static void main(String[] args) {
