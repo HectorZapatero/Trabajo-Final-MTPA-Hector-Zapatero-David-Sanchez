@@ -67,7 +67,10 @@ public class VentanaChat extends JFrame {
     private void enviarComandoTerminal() {
         String texto = campoMensaje.getText().trim();
         if (!texto.isEmpty()) {
-            if (texto.startsWith("MSG_ROOM|")) {
+            if (texto.equals("LOGOUT")) {
+                conexion.detenerSistemaHeartbeat();
+                conexion.enviarComando(texto);
+            } else if (texto.startsWith("MSG_ROOM|")) {
                 String[] partes = texto.split("\\|");
                 if (partes.length >= 3) {
                     abrirVentana(partes[1]); 
@@ -99,6 +102,11 @@ public class VentanaChat extends JFrame {
                 String comando = partes[0];
 
                 switch (comando) {
+                    case "LOGIN_OK":
+                        areaChat.append(">> Sesión iniciada correctamente. Sistema de latidos activado.\n");
+                        conexion.iniciarSistemaHeartbeat();
+                        break;
+
                     case "ROOM_BROADCAST":
                         String salon = partes[1];
                         String emisor = partes[2];

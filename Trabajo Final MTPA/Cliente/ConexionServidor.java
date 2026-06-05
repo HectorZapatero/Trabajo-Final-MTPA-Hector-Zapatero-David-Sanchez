@@ -35,4 +35,43 @@ public class ConexionServidor {
             }
         }).start();
     }
+
+    private Thread hiloHeartbeat;
+    private volatile boolean ejecutarHeartbeat = false;
+    private static final int TIEMPO_LATIDO_MS = 60000; 
+
+    public void iniciarSistemaHeartbeat() {
+        detenerSistemaHeartbeat();
+        ejecutarHeartbeat = true;
+        
+        Runnable tareaLatido = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (ejecutarHeartbeat && !socket.isClosed()) {
+                        if (out != null) {
+                            out.println("PING");
+                            out.flush();
+                        }
+                        Thread.sleep(TIEMPO_LATIDO_MS);
+                    }
+                } catch (InterruptedException e) {
+                    // Hilo interrumpido pacíficamente
+                } catch (Exception e) {
+                    detenerSistemaHeartbeat();
+                }
+            }
+        };
+
+        hiloHeartbeat = new Thread(tareaLatido, "Hilo-Heartbeat-Cliente");
+        hiloHeartbeat.setDaemon(true);
+        hiloHeartbeat.start();
+    }
+
+    public void detenerSistemaHeartbeat() {
+        ejecutarHeartbeat = false;
+        if (hiloHeartbeat != null && hiloHeartbeat.isAlive()) {
+            hiloHeartbeat.interrupt();
+        }
+    }
 }
