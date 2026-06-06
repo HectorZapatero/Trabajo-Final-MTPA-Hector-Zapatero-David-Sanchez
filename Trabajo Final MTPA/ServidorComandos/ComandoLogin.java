@@ -23,6 +23,7 @@ public class ComandoLogin implements Comando {
         if (servicioUsuarios.validarCredenciales(usuario, clave)) {
             cliente.setNombreUsuario(usuario);
             cliente.setAutenticado(true);
+            Servidor.GestorLogs.registrar("servidor.log", "Login correcto de usuario: " + usuario);
             cliente.enviarMensaje("LOGIN_OK|IA,Deportes,Therian,Manga,UEMC");
             ServidorChat.difundirNotificacion("NOTIFY_JOIN|" + usuario, cliente);
         } else {

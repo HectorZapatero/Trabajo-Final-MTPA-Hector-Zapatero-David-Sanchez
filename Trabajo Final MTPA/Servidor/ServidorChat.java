@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 public class ServidorChat {
     private static final int PUERTO = 5000;
     public static final List<IClienteConectado> clientesConectados = Collections.synchronizedList(new ArrayList<>());
@@ -77,7 +78,7 @@ public class ServidorChat {
                 } else if (comando.equals("maintenance on")) {
                     mantenimiento = true;
                     System.out.println(" Mantenimiento activado. Expulsando clientes...");
-                 
+                    GestorLogs.registrar("servidor.log", "¡ALERTA! El administrador ha ACTIVADO el modo mantenimiento.");
                     difundirATodos("MAINTENANCE|ON");
                     
                 } else if (comando.equals("maintenance off")) {
@@ -123,6 +124,7 @@ public class ServidorChat {
         iniciarConsolaAdmin();
         try (ServerSocket serverSocket = new ServerSocket(PUERTO)) {
             System.out.println("Servidor operativo en puerto " + PUERTO);
+            GestorLogs.registrar("servidor.log", "SERVIDOR INICIADO EN PUERTO " + PUERTO);
             while (true) {
                 Socket socketCliente = serverSocket.accept();
                 if (!aceptarConexiones) {

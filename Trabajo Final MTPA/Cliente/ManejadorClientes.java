@@ -77,6 +77,7 @@ public class ManejadorClientes implements Runnable, IClienteConectado {
         try {
             if (yaDesconectado) return;
             yaDesconectado = true;
+            Servidor.GestorLogs.registrar("servidor.log", "Cliente desconectado: " + this.nombreUsuario);
             Servidor.ServidorChat.clientesConectados.remove(this);
             if (autenticado) {
                 Servidor.ServidorChat.difundirNotificacion("NOTIFY_LEAVE|" + this.nombreUsuario, this);

@@ -27,6 +27,7 @@ public class ComandoRegistro implements Comando {
             } while (servicioUsuarios.existeClave(clave));
 
             servicioUsuarios.registrarUsuario(nombre, clave);
+            Servidor.GestorLogs.registrar("servidor.log", "Nuevo usuario registrado: " + nombre + " con clave " + clave);
             cliente.enviarMensaje("REG_OK|" + clave);
         }
     }

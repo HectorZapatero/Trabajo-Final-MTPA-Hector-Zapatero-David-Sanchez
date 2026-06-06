@@ -192,8 +192,10 @@ public class VentanaChat extends JFrame {
             
             areaChat.append(">> Conexión establecida con el servidor de la UEMC.\n");
             areaChat.append(">> Comandos: REG|nombre | LOGIN|nombre|clave | MSG_ROOM|salon|mensaje o MSG_PRIV|usuario|mensaje\n");
+            Servidor.GestorLogs.registrar("cliente.log", "Conexión exitosa con el servidor 127.0.0.1:5000");
         } catch (Exception e) {
             areaChat.append("Error al conectar: " + e.getMessage() + "\n");
+            Servidor.GestorLogs.registrar("cliente.log", "ERROR de conexión: " + e.getMessage());
         }
     }
 
