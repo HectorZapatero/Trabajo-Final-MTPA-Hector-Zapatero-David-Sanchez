@@ -49,9 +49,9 @@ public class ConexionServidor {
             public void run() {
                 try {
                     while (ejecutarHeartbeat && !socket.isClosed()) {
-                        if (out != null) {
-                            out.println("PING");
-                            out.flush();
+                        if (salida != null) {
+                            salida.println("PING");
+                            salida.flush();
                         }
                         Thread.sleep(TIEMPO_LATIDO_MS);
                     }
