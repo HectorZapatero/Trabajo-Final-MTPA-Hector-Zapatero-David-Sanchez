@@ -11,6 +11,10 @@ import java.util.Map;
 public class EnrutadorComandos {
     private final Map<String, Comando> mapaComandos = new HashMap<>();
 
+    /**
+     * Componente encargado de interceptar las tramas crudas del protocolo de red,
+     * identificar la palabra clave e invocar al comando correspondiente.
+     */
     public EnrutadorComandos(IServicioUsuarios usuarios, IServicioSalones salones, IServicioMensajes mensajes) {
         mapaComandos.put("REG", new ComandoRegistro(usuarios));
         mapaComandos.put("LOGIN", new ComandoLogin(usuarios));
@@ -24,6 +28,12 @@ public class EnrutadorComandos {
         mapaComandos.put("GET_HIST", new ComandoHistorial(mensajes));
     }
 
+    /**
+     * Trocea la cadena recibida, verifica el estado de mantenimiento del sistema
+     * y ejecuta el comando solicitado si cumple las condiciones del protocolo.
+     * @param mensajeCrudo Trama de texto separada por tuberías (|).
+     * @param cliente Instancia del cliente conectado que invoca la acción.
+     */
     public void procesar(String mensajeCrudo, IClienteConectado cliente) {
         String[] partes = mensajeCrudo.split("\\|");
         String palabraClave = partes[0];

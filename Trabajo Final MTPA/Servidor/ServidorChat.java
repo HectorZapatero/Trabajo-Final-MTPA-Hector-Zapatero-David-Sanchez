@@ -13,10 +13,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Servidor principal del chat que gestiona el ciclo de vida de las conexiones,
+ * la difusión de mensajes por salas y el estado de mantenimiento del sistema.
+ */
 public class ServidorChat {
     private static final int PUERTO = 5000;
     public static final List<IClienteConectado> clientesConectados = Collections.synchronizedList(new ArrayList<>());
     private static final IServicioMensajes gestorMensajes = new GestorMensajesCSV();
+    
+    /**
+     * Devuelve el servicio encargado de la persistencia e historial de mensajes.
+     * @return Instancia del gestor de mensajes en formato CSV.
+     */
     public static IServicioMensajes obtenerGestorMensajes() { return gestorMensajes; }
     
     public static volatile boolean aceptarConexiones = true;
@@ -25,9 +34,22 @@ public class ServidorChat {
     private static final IServicioUsuarios gestorUsuarios = (IServicioUsuarios) new GestorUsuariosCSV();
     private static final IServicioSalones gestorSalones = (IServicioSalones) new GestorSalonesMemoria();
 
+    /**
+     * Devuelve el servicio encargado del registro y autenticación de usuarios.
+     * @return Instancia del gestor de usuarios en formato CSV.
+     */
     public static IServicioUsuarios obtenerGestorUsuarios() { return gestorUsuarios; }
+    /**
+     * Devuelve el servicio encargado del control de métricas de los salones.
+     * @return Instancia del gestor de salones en memoria.
+     */
     public static IServicioSalones obtenerGestorSalones() { return gestorSalones; }
 
+    /**
+     * Difunde una trama de notificación a todos los usuarios autenticados excepto al emisor.
+     * @param trama Cadena de texto con el protocolo de notificación (ej. NOTIFY_JOIN).
+     * @param emisor Cliente conectado que origina la notificación.
+     */
     public static void difundirNotificacion(String trama, IClienteConectado emisor) {
         synchronized (clientesConectados) {
             for (IClienteConectado cliente : clientesConectados) {
@@ -38,6 +60,11 @@ public class ServidorChat {
         }
     }
 
+    /**
+     * Difunde un mensaje a todos los usuarios que tengan el salón activo en sus pantallas.
+     * @param salon Nombre de la sala de chat de destino.
+     * @param trama Cadena de texto formateada con el mensaje y metadatos.
+     */
     public static void difundirPorSala(String salon, String trama) {
         synchronized (clientesConectados) {
             for (IClienteConectado cliente : clientesConectados) {
@@ -48,6 +75,13 @@ public class ServidorChat {
         }
     }
 
+    /**
+     * Intenta enviar un mensaje privado directo a un usuario específico mediante socket en memoria viva.
+     * @param remitente Nombre del usuario que envía el mensaje.
+     * @param destino Nombre del usuario que debería recibir el mensaje.
+     * @param msg Contenido textual del mensaje privado.
+     * @return true si el usuario destino está conectado y autenticado, false en caso contrario.
+     */
     public static boolean enviarPrivadoDirecto(String remitente, String destino, String msg) {
         synchronized (clientesConectados) {
             for (IClienteConectado c : clientesConectados) {
@@ -95,6 +129,10 @@ public class ServidorChat {
         }).start();
     }
 
+    /**
+     * Calcula y muestra por la terminal del servidor las métricas en tiempo real:
+     * usuarios online totales, usuarios activos por sala y mensajes acumulados por salón.
+     */
     public static synchronized void imprimirMetricas() {
         System.out.println("--- ESTADÍSTICAS EN TIEMPO REAL ---");
         int activos = 0;
@@ -121,6 +159,10 @@ public class ServidorChat {
             System.out.println(" - " + s + ": " + cant + " mensaje(s)");
         }
     }
+    /**
+     * Difunde una trama de control o texto a absolutamente todos los clientes conectados en el socket.
+     * @param trama Cadena de texto con el protocolo o mensaje para los clientes.
+     */
     public static void difundirATodos(String trama) {
     synchronized (clientesConectados) {
         for (IClienteConectado cliente : clientesConectados) {
@@ -129,6 +171,10 @@ public class ServidorChat {
     }
 }
 
+    /**
+     * Arranca el bucle principal del servidor, inicializa la consola de administración
+     * y acepta conexiones entrantes de sockets asociándoles un hilo dedicado.
+     */
     public void iniciar() {
         iniciarConsolaAdmin();
         try (ServerSocket serverSocket = new ServerSocket(PUERTO)) {
