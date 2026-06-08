@@ -4,6 +4,10 @@ import java.awt.*;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.*;
 
+/**
+ * Componente visual que modela una sala de chat independiente (pública o privada)
+ * gestionando el envío de mensajes específicos y la carga controlada del historial.
+ */
 public class VentanaChat extends JFrame {
     private JTextArea areaChat; 
     private JTextField campoMensaje;

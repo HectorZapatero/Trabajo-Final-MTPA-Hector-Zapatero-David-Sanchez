@@ -5,6 +5,10 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.*;
 
+/**
+ * Terminal principal del sistema de chat encargada de orquestar el login, 
+ * renderizar la consola del sistema, enrutar las ventanas secundarias y procesar los avisos.
+ */
 public class VentanaCanal extends JFrame {
     private JTextArea areaChat;
     private JTextField campoMensaje;
