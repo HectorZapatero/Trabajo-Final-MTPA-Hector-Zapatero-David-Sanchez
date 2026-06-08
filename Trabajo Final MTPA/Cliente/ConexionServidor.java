@@ -8,7 +8,7 @@ import java.net.Socket;
 
 public class ConexionServidor {
     private Socket socket;
-    private PrintWriter salida;
+    private PrintWriter salida
     private BufferedReader entrada;
 
     public void conectar(String ip, int puerto) throws IOException {

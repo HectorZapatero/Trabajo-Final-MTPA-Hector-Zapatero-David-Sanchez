@@ -83,6 +83,7 @@ public class ManejadorClientes implements Runnable, IClienteConectado {
                 Servidor.ServidorChat.difundirNotificacion("NOTIFY_LEAVE|" + this.nombreUsuario, this);
             }
             if (socket != null && !socket.isClosed()) socket.close();
+            Servidor.ServidorChat.imprimirMetricas();
         } catch (IOException e) {}
     }
 }

@@ -36,6 +36,8 @@ public class ComandoMensajeSala extends ComandoAutenticado {
 
             String trama = "ROOM_BROADCAST|" + salon + "|" + cliente.getNombreUsuario() + "|" + hora + "|" + contenido;
             ServidorChat.difundirPorSala(salon, trama);
+            
+            Servidor.ServidorChat.imprimirMetricas();
         }
     }
 }

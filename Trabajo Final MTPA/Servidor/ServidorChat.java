@@ -75,6 +75,8 @@ public class ServidorChat {
                 } else if (comando.equals("2")) {
                     aceptarConexiones = true;
                     System.out.println(" Accesos abiertos.");
+                } else if (comando.equals("stats") || comando.equals("3")) {
+                    imprimirMetricas();
                 } else if (comando.equals("maintenance on")) {
                     mantenimiento = true;
                     System.out.println(" Mantenimiento activado. Expulsando clientes...");
@@ -93,8 +95,8 @@ public class ServidorChat {
         }).start();
     }
 
-    private void imprimirMetricas() {
-        System.out.println("\n--- ESTADÍSTICAS ---");
+    public static synchronized void imprimirMetricas() {
+        System.out.println("--- ESTADÍSTICAS EN TIEMPO REAL ---");
         int activos = 0;
         java.util.Map<String, Integer> salasActivas = new java.util.HashMap<>();
         
@@ -106,11 +108,18 @@ public class ServidorChat {
                 }
             }
         }
-        System.out.println("Usuarios online: " + activos);
-        System.out.println("Ventanas abiertas por sala/usuario:");
-        salasActivas.forEach((sala, cant) -> System.out.println(" - " + sala + ": " + cant + " activo(s)"));
-        System.out.println("Mensajes totales procesados por sala:");
-        gestorSalones.obtenerMetricas().forEach((sala, cant) -> System.out.println(" - " + sala + ": " + cant + " mensajes"));
+        System.out.println("Usuarios conectados al instante: " + activos);
+        System.out.println("Usuarios activos por salón:");
+        String[] salonesSoportados = {"IA", "Deportes", "Manga", "Therian", "UEMC"};
+        for (String s : salonesSoportados) {
+            int cant = salasActivas.getOrDefault(s, 0);
+            System.out.println(" - " + s + ": " + cant + " activo(s)");
+        }
+        System.out.println("Mensajes totales enviados por salón:");
+        for (String s : salonesSoportados) {
+            int cant = gestorSalones.obtenerMetricas().getOrDefault(s, 0);
+            System.out.println(" - " + s + ": " + cant + " mensaje(s)");
+        }
     }
     public static void difundirATodos(String trama) {
     synchronized (clientesConectados) {
@@ -136,6 +145,7 @@ public class ServidorChat {
                 ManejadorClientes manejador = new ManejadorClientes(socketCliente);
                 clientesConectados.add(manejador);
                 new Thread(manejador).start();
+                imprimirMetricas();
             }
         } catch (IOException e) {
             System.out.println("Error en servidor: " + e.getMessage());
